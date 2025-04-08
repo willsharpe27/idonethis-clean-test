@@ -10,7 +10,10 @@ app.secret_key = "your-secret-key"
 DB_PATH = os.path.join(os.path.abspath(os.path.dirname(__file__)), "entries.db")
 
 def init_db():
+    print(f"\U0001F4CD Current working directory: {os.getcwd()}")
+    print(f"\U0001F6A3️ Absolute DB path: {DB_PATH}")
     if not os.path.exists(DB_PATH):
+        print("🆕 Creating new database and table...")
         with sqlite3.connect(DB_PATH) as conn:
             conn.execute("""
                 CREATE TABLE IF NOT EXISTS entries (
@@ -19,6 +22,9 @@ def init_db():
                     body TEXT NOT NULL
                 )
             """)
+        print("✅ entries.db created successfully.")
+    else:
+        print("✅ Database found at", DB_PATH)
 
 def query_db(query, args=(), one=False):
     with sqlite3.connect(DB_PATH) as conn:
@@ -37,7 +43,7 @@ def today_entries():
     today = datetime.datetime.now().date()
 
     if request.method == "POST":
-        body = request.form.get("body", "").strip()
+        body = request.form.get("body").strip()
         date_input = request.form.get("occurred_on")
         try:
             occurred_on = datetime.datetime.strptime(date_input, "%Y-%m-%d").date()
@@ -51,25 +57,13 @@ def today_entries():
         except ValueError:
             flash("Invalid date format.", "danger")
 
-    # Get historical entries matching this day in any year
-    month_day = today.strftime("%m-%d")
-    matches = query_db(
-        "SELECT * FROM entries WHERE strftime('%m-%d', occurred_on) = ?",
-        (month_day,)
-    )
-
-    selected = []
-    if matches:
-        random_year = random.choice(list(set([entry['occurred_on'][:4] for entry in matches])))
-        selected = [entry for entry in matches if entry['occurred_on'].startswith(random_year)]
-
-    # Clamp to past 14 days and find the earliest day with <3 entries
+    # Only look back 14 days
     fourteen_days_ago = today - datetime.timedelta(days=14)
-    date_range = [fourteen_days_ago + datetime.timedelta(days=i) for i in range(15)]
+    recent_dates = [fourteen_days_ago + datetime.timedelta(days=i) for i in range(15)]
 
     suggested_date = today
     entry_count = 0
-    for date in date_range:
+    for date in recent_dates:
         result = query_db(
             "SELECT COUNT(*) as cnt FROM entries WHERE occurred_on = ?",
             (str(date),),
@@ -80,6 +74,18 @@ def today_entries():
             suggested_date = date
             entry_count = count
             break
+
+    # Show entries for the same MM-DD but from a random past year
+    month_day = suggested_date.strftime("%m-%d")
+    matches = query_db(
+        "SELECT * FROM entries WHERE strftime('%m-%d', occurred_on) = ?",
+        (month_day,)
+    )
+
+    selected = []
+    if matches:
+        random_year = random.choice(list(set([entry['occurred_on'][:4] for entry in matches])))
+        selected = [entry for entry in matches if entry['occurred_on'].startswith(random_year)][:3]
 
     suggested_label = f"🎯 Write your reflection for {suggested_date.strftime('%A (%B %d, %Y)')}..."
 
@@ -114,7 +120,7 @@ def history():
 @app.route("/add", methods=["GET", "POST"])
 def add():
     if request.method == "POST":
-        body = request.form.get("body", "").strip()
+        body = request.form.get("body").strip()
         date_input = request.form.get("occurred_on")
         try:
             occurred_on = datetime.datetime.strptime(date_input, "%Y-%m-%d").date()
@@ -131,4 +137,5 @@ def add():
 if __name__ == "__main__":
     init_db()
     port = int(os.environ.get("PORT", 5000))
+    print(f"🔌 Starting on port: {port}")
     app.run(host="0.0.0.0", port=port)
