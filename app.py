@@ -7,24 +7,7 @@ import os
 
 app = Flask(__name__)
 app.secret_key = "your-secret-key"
-DB_PATH = os.path.join(os.path.abspath(os.path.dirname(__file__)), "entries.db")
-
-def init_db():
-    print(f"\U0001F4CD Current working directory: {os.getcwd()}")
-    print(f"\U0001F6A3️ Absolute DB path: {DB_PATH}")
-    if not os.path.exists(DB_PATH):
-        print("🆕 Creating new database and table...")
-        with sqlite3.connect(DB_PATH) as conn:
-            conn.execute("""
-                CREATE TABLE IF NOT EXISTS entries (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    occurred_on DATE NOT NULL,
-                    body TEXT NOT NULL
-                )
-            """)
-        print("✅ entries.db created successfully.")
-    else:
-        print("✅ Database found at", DB_PATH)
+DB_PATH = "entries.db"
 
 def query_db(query, args=(), one=False):
     with sqlite3.connect(DB_PATH) as conn:
@@ -134,8 +117,12 @@ def add():
             pass
     return render_template("add.html")
 
+# Production-ready WSGI config (Gunicorn will use this block)
+if __name__ != "__main__":
+    gunicorn_app = app
+
+# Local dev server support
 if __name__ == "__main__":
-    init_db()
     port = int(os.environ.get("PORT", 5000))
-    print(f"🔌 Starting on port: {port}")
+    print("✅ Database found:", DB_PATH)
     app.run(host="0.0.0.0", port=port)
