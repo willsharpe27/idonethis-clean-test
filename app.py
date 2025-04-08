@@ -7,7 +7,24 @@ import os
 
 app = Flask(__name__)
 app.secret_key = "your-secret-key"
-DB_PATH = "entries.db"
+DB_PATH = os.path.join(os.path.abspath(os.path.dirname(__file__)), "entries.db")
+
+def init_db():
+    print(f"\U0001F4CD Current working directory: {os.getcwd()}")
+    print(f"\U0001F6A3️ Absolute DB path: {DB_PATH}")
+    if not os.path.exists(DB_PATH):
+        print("🆕 Creating new database and table...")
+        with sqlite3.connect(DB_PATH) as conn:
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS entries (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    occurred_on DATE NOT NULL,
+                    body TEXT NOT NULL
+                )
+            """)
+        print("✅ entries.db created successfully.")
+    else:
+        print("✅ Database found at", DB_PATH)
 
 def query_db(query, args=(), one=False):
     with sqlite3.connect(DB_PATH) as conn:
@@ -26,8 +43,8 @@ def today_entries():
     today = datetime.datetime.now()
 
     if request.method == "POST":
-        body = request.form.get("body", "").strip()
-        date_input = request.form.get("occurred_on", "")
+        body = request.form.get("body").strip()
+        date_input = request.form.get("occurred_on")
         try:
             occurred_on = datetime.datetime.strptime(date_input, "%Y-%m-%d").date()
             if body:
@@ -103,8 +120,8 @@ def history():
 @app.route("/add", methods=["GET", "POST"])
 def add():
     if request.method == "POST":
-        body = request.form.get("body", "").strip()
-        date_input = request.form.get("occurred_on", "")
+        body = request.form.get("body").strip()
+        date_input = request.form.get("occurred_on")
         try:
             occurred_on = datetime.datetime.strptime(date_input, "%Y-%m-%d").date()
             if body:
@@ -117,7 +134,8 @@ def add():
             pass
     return render_template("add.html")
 
-# For local testing only
 if __name__ == "__main__":
+    init_db()
     port = int(os.environ.get("PORT", 5000))
+    print(f"🔌 Starting on port: {port}")
     app.run(host="0.0.0.0", port=port)
