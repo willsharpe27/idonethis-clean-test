@@ -9,6 +9,12 @@ app = Flask(__name__)
 app.secret_key = "your-secret-key"
 DB_PATH = "entries.db"
 
+# ✅ Check for DB presence at runtime
+if not os.path.exists(DB_PATH):
+    print(f"❌ Database not found at {DB_PATH}")
+else:
+    print(f"✅ Database found: {DB_PATH}")
+
 def query_db(query, args=(), one=False):
     with sqlite3.connect(DB_PATH) as conn:
         conn.row_factory = sqlite3.Row
@@ -116,11 +122,10 @@ def add():
                 )
                 return redirect(url_for("today_entries"))
         except ValueError:
-            print("⚠️ Invalid date format submitted.")
             pass
     return render_template("add.html")
 
-# ✅ Required for Render to detect correct port
+# ✅ Required for Render to detect and bind correct port
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
     print(f"🔌 Starting on port: {port}")
