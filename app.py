@@ -7,13 +7,24 @@ import os
 
 app = Flask(__name__)
 app.secret_key = "your-secret-key"
-DB_PATH = "entries.db"
 
-# ✅ Check for DB presence at runtime
-if not os.path.exists(DB_PATH):
-    print(f"❌ Database not found at {DB_PATH}")
-else:
-    print(f"✅ Database found: {DB_PATH}")
+DB_PATH = os.path.join(os.path.dirname(__file__), "entries.db")
+
+# Create the database and table if not exists
+def init_db():
+    if not os.path.exists(DB_PATH):
+        print("🆕 Creating new database...")
+        with sqlite3.connect(DB_PATH) as conn:
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS entries (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    occurred_on DATE NOT NULL,
+                    body TEXT NOT NULL
+                )
+            """)
+        print("✅ Database and table created.")
+    else:
+        print("✅ Database found:", DB_PATH)
 
 def query_db(query, args=(), one=False):
     with sqlite3.connect(DB_PATH) as conn:
@@ -45,18 +56,12 @@ def today_entries():
                 return redirect(url_for("today_entries"))
         except ValueError:
             flash("Invalid date format.", "danger")
-            print("⚠️ Invalid date format submitted.")
 
     month_day = today.strftime("%m-%d")
-    try:
-        matches = query_db(
-            "SELECT * FROM entries WHERE strftime('%m-%d', occurred_on) = ?",
-            (month_day,)
-        )
-        print(f"🔍 Found {len(matches)} entries on {month_day}")
-    except Exception as e:
-        print("❌ Error fetching historical matches:", e)
-        matches = []
+    matches = query_db(
+        "SELECT * FROM entries WHERE strftime('%m-%d', occurred_on) = ?",
+        (month_day,)
+    )
 
     selected = []
     if matches:
@@ -83,6 +88,7 @@ def today_entries():
 
     suggested_date = earliest_missing if earliest_missing else today.date()
     suggested_label = f"🎯 Write your reflection for {suggested_date.strftime('%A (%B %d, %Y)')}..."
+
     print("🔁 Rendering today.html with:", suggested_label)
 
     return render_template(
@@ -130,8 +136,9 @@ def add():
             pass
     return render_template("add.html")
 
-# ✅ Required for Render to detect and bind correct port
+# ✅ START FLASK ON RENDER
 if __name__ == "__main__":
+    init_db()
     port = int(os.environ.get("PORT", 5000))
     print(f"🔌 Starting on port: {port}")
     app.run(host="0.0.0.0", port=port)
