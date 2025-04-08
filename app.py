@@ -68,25 +68,22 @@ def today_entries():
         random_year = random.choice(list(set([entry['occurred_on'][:4] for entry in matches])))
         selected = [entry for entry in matches if entry['occurred_on'].startswith(random_year)]
 
-    known_start = datetime.date(2015, 2, 4)
-    earliest_missing = None
-    entry_count = 0
-    for i in range((today.date() - known_start).days + 1):
-        date_to_check = known_start + datetime.timedelta(days=i)
-        if date_to_check > today.date():
-            break
-        count = query_db(
-            "SELECT COUNT(*) as cnt FROM entries WHERE occurred_on = ?",
-            (str(date_to_check),),
-            one=True
-        )
-        cnt = count["cnt"] if count else 0
-        if cnt < 3:
-            earliest_missing = date_to_check
-            entry_count = cnt
-            break
+    # New: Fast check within 14 days window for under-logged dates
+    fourteen_days_ago = today.date() - datetime.timedelta(days=14)
+    result = query_db(
+        "SELECT occurred_on, COUNT(*) as cnt FROM entries WHERE occurred_on BETWEEN ? AND ? GROUP BY occurred_on HAVING cnt < 3 ORDER BY occurred_on ASC LIMIT 1",
+        (str(fourteen_days_ago), str(today.date())),
+        one=True
+    )
+    print(f"🕵️ Suggested check: {result}")
 
-    suggested_date = earliest_missing if earliest_missing else today.date()
+    if result and datetime.datetime.strptime(result["occurred_on"], "%Y-%m-%d").date() >= fourteen_days_ago:
+        suggested_date = datetime.datetime.strptime(result["occurred_on"], "%Y-%m-%d").date()
+        entry_count = result["cnt"]
+    else:
+        suggested_date = today.date()
+        entry_count = 0
+
     suggested_label = f"🎯 Write your reflection for {suggested_date.strftime('%A (%B %d, %Y)')}..."
 
     return render_template(
