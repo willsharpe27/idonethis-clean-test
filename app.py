@@ -48,10 +48,15 @@ def today_entries():
             print("⚠️ Invalid date format submitted.")
 
     month_day = today.strftime("%m-%d")
-    matches = query_db(
-        "SELECT * FROM entries WHERE strftime('%m-%d', occurred_on) = ?",
-        (month_day,)
-    )
+    try:
+        matches = query_db(
+            "SELECT * FROM entries WHERE strftime('%m-%d', occurred_on) = ?",
+            (month_day,)
+        )
+        print(f"🔍 Found {len(matches)} entries on {month_day}")
+    except Exception as e:
+        print("❌ Error fetching historical matches:", e)
+        matches = []
 
     selected = []
     if matches:
