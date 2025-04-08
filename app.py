@@ -7,13 +7,13 @@ import os
 
 app = Flask(__name__)
 app.secret_key = "your-secret-key"
+DB_PATH = os.path.join(os.path.abspath(os.path.dirname(__file__)), "entries.db")
 
-DB_PATH = os.path.join(os.path.dirname(__file__), "entries.db")
-
-# Create the database and table if not exists
 def init_db():
+    print(f"\U0001F4CD Current working directory: {os.getcwd()}")
+    print(f"\U0001F6A3️ Absolute DB path: {DB_PATH}")
     if not os.path.exists(DB_PATH):
-        print("🆕 Creating new database...")
+        print("🆕 Creating new database and table...")
         with sqlite3.connect(DB_PATH) as conn:
             conn.execute("""
                 CREATE TABLE IF NOT EXISTS entries (
@@ -22,9 +22,9 @@ def init_db():
                     body TEXT NOT NULL
                 )
             """)
-        print("✅ Database and table created.")
+        print("✅ entries.db created successfully.")
     else:
-        print("✅ Database found:", DB_PATH)
+        print("✅ Database found at", DB_PATH)
 
 def query_db(query, args=(), one=False):
     with sqlite3.connect(DB_PATH) as conn:
@@ -89,8 +89,6 @@ def today_entries():
     suggested_date = earliest_missing if earliest_missing else today.date()
     suggested_label = f"🎯 Write your reflection for {suggested_date.strftime('%A (%B %d, %Y)')}..."
 
-    print("🔁 Rendering today.html with:", suggested_label)
-
     return render_template(
         "today.html",
         entries=selected,
@@ -136,7 +134,6 @@ def add():
             pass
     return render_template("add.html")
 
-# ✅ START FLASK ON RENDER
 if __name__ == "__main__":
     init_db()
     port = int(os.environ.get("PORT", 5000))
