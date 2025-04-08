@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Add New Entry</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body class="bg-light">
+  <div class="container py-5">
+    <h1 class="mb-4">📝 Add a New Reflection</h1>
+
+    <form method="post" class="card p-4 shadow-sm">
+      <div class="mb-3">
+        <label for="occurred_on" class="form-label">Date</label>
+        <input type="date" class="form-control" id="occurred_on" name="occurred_on" required>
+      </div>
+
+      <div class="mb-3">
+        <label for="body" class="form-label">What did you get done?</label>
+        <textarea class="form-control" id="body" name="body" rows="4" placeholder="🎯 Write your reflection..." required></textarea>
+      </div>
+
+      <button type="submit" class="btn btn-primary">Add Entry</button>
+      <a href="/" class="btn btn-outline-secondary ms-2">Cancel</a>
+    </form>
+  </div>
+</body>
+</html>
