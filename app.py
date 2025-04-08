@@ -39,6 +39,7 @@ def today_entries():
                 return redirect(url_for("today_entries"))
         except ValueError:
             flash("Invalid date format.", "danger")
+            print("⚠️ Invalid date format submitted.")
 
     month_day = today.strftime("%m-%d")
     matches = query_db(
@@ -71,6 +72,7 @@ def today_entries():
 
     suggested_date = earliest_missing if earliest_missing else today.date()
     suggested_label = f"🎯 Write your reflection for {suggested_date.strftime('%A (%B %d, %Y)')}..."
+    print("🔁 Rendering today.html with:", suggested_label)
 
     return render_template(
         "today.html",
@@ -114,10 +116,11 @@ def add():
                 )
                 return redirect(url_for("today_entries"))
         except ValueError:
+            print("⚠️ Invalid date format submitted.")
             pass
     return render_template("add.html")
 
-# ✅ Required for Render to detect the correct port
+# ✅ Required for Render to detect correct port
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
     print(f"🔌 Starting on port: {port}")
