@@ -9,7 +9,6 @@ app = Flask(__name__)
 app.secret_key = "your-secret-key"
 DB_PATH = "entries.db"
 
-# Helper functions
 def query_db(query, args=(), one=False):
     with sqlite3.connect(DB_PATH) as conn:
         conn.row_factory = sqlite3.Row
@@ -22,14 +21,13 @@ def execute_db(query, args=()):
         cur = conn.execute(query, args)
         conn.commit()
 
-# Main page
 @app.route("/", methods=["GET", "POST"])
 def today_entries():
     today = datetime.datetime.now()
 
     if request.method == "POST":
-        body = request.form.get("body").strip()
-        date_input = request.form.get("occurred_on")
+        body = request.form.get("body", "").strip()
+        date_input = request.form.get("occurred_on", "")
         try:
             occurred_on = datetime.datetime.strptime(date_input, "%Y-%m-%d").date()
             if body:
@@ -42,20 +40,17 @@ def today_entries():
         except ValueError:
             flash("Invalid date format.", "danger")
 
-    # Get entries on this day in history
     month_day = today.strftime("%m-%d")
     matches = query_db(
         "SELECT * FROM entries WHERE strftime('%m-%d', occurred_on) = ?",
         (month_day,)
     )
-    print(f"🔍 Found {len(matches)} entries on {month_day}")
 
     selected = []
     if matches:
         random_year = random.choice(list(set([entry['occurred_on'][:4] for entry in matches])))
         selected = [entry for entry in matches if entry['occurred_on'].startswith(random_year)]
 
-    # Suggest date with <3 reflections
     known_start = datetime.date(2015, 2, 4)
     earliest_missing = None
     entry_count = 0
@@ -74,17 +69,8 @@ def today_entries():
             entry_count = cnt
             break
 
-    if not earliest_missing:
-        earliest_missing = today.date()
-        entry_count = query_db(
-            "SELECT COUNT(*) as cnt FROM entries WHERE occurred_on = ?",
-            (str(earliest_missing),),
-            one=True
-        )["cnt"]
-
-    suggested_date = earliest_missing
+    suggested_date = earliest_missing if earliest_missing else today.date()
     suggested_label = f"🎯 Write your reflection for {suggested_date.strftime('%A (%B %d, %Y)')}..."
-    print("🔁 Rendering today.html with:", suggested_label)
 
     return render_template(
         "today.html",
@@ -95,7 +81,6 @@ def today_entries():
         reflection_progress=entry_count
     )
 
-# History page
 @app.route("/history")
 def history():
     search = request.args.get("q", "").strip().lower()
@@ -115,12 +100,11 @@ def history():
     grouped = dict(sorted(grouped.items(), reverse=True))
     return render_template("history.html", entries_by_year=grouped, search=search)
 
-# Add entry manually
 @app.route("/add", methods=["GET", "POST"])
 def add():
     if request.method == "POST":
-        body = request.form.get("body").strip()
-        date_input = request.form.get("occurred_on")
+        body = request.form.get("body", "").strip()
+        date_input = request.form.get("occurred_on", "")
         try:
             occurred_on = datetime.datetime.strptime(date_input, "%Y-%m-%d").date()
             if body:
@@ -130,15 +114,10 @@ def add():
                 )
                 return redirect(url_for("today_entries"))
         except ValueError:
-            flash("Invalid date format.", "danger")
+            pass
     return render_template("add.html")
 
-# Entry point for Render
-if __name__ != "__main__":
-    print("✅ Gunicorn is loading the app")
-
-# Local dev (if needed)
+# For local testing only
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
-    print("✅ Running locally")
-    app.run(host="0.0.0.0", port=port, debug=True)
+    app.run(host="0.0.0.0", port=port)
