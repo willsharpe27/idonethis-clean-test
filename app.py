@@ -38,18 +38,15 @@ def get_matches_for_month_day(month_day):
     matches = []
     for entry in result.data:
         try:
-            raw_date = entry["occurred_on"]
-            if isinstance(raw_date, str):
-                entry_date = datetime.datetime.fromisoformat(raw_date.rstrip("Z")).date()
-            elif isinstance(raw_date, datetime.date):
-                entry_date = raw_date
+            if isinstance(entry["occurred_on"], str):
+                entry_date = datetime.datetime.strptime(entry["occurred_on"], "%Y-%m-%d").date()
             else:
-                continue
+                entry_date = entry["occurred_on"]
 
             if entry_date.strftime("%m-%d") == month_day:
                 matches.append(entry)
         except Exception as e:
-            print("❌ Error parsing date:", raw_date, "| Error:", e)
+            print("❌ Error parsing date:", entry["occurred_on"], "| Error:", e)
 
     print(f"✅ MATCHES for {month_day}: {len(matches)} found")
     return matches
