@@ -38,8 +38,9 @@ def get_matches_for_month_day(month_day):
     matches = []
     for entry in result.data:
         try:
-            # Convert to string to safely parse date
-            entry_date = datetime.datetime.strptime(str(entry["occurred_on"]), "%Y-%m-%d")
+            entry_date = entry["occurred_on"]
+            if isinstance(entry_date, str):
+                entry_date = datetime.datetime.strptime(entry_date, "%Y-%m-%d").date()
             if entry_date.strftime("%m-%d") == month_day:
                 matches.append(entry)
         except Exception as e:
@@ -69,8 +70,19 @@ def today_entries():
 
     selected = []
     if matches:
-        random_year = random.choice(list(set([str(entry['occurred_on'])[:4] for entry in matches])))
-        selected = [entry for entry in matches if str(entry['occurred_on']).startswith(random_year)][:3]
+        random_year = random.choice(list(set([
+            entry["occurred_on"].year if isinstance(entry["occurred_on"], datetime.date)
+            else datetime.datetime.strptime(entry["occurred_on"], "%Y-%m-%d").year
+            for entry in matches
+        ])))
+        selected = [
+            entry for entry in matches
+            if (
+                entry["occurred_on"].year == random_year
+                if isinstance(entry["occurred_on"], datetime.date)
+                else datetime.datetime.strptime(entry["occurred_on"], "%Y-%m-%d").year == random_year
+            )
+        ][:3]
 
     fourteen_days_ago = today - datetime.timedelta(days=14)
     recent_dates = [fourteen_days_ago + datetime.timedelta(days=i) for i in range(15)]
