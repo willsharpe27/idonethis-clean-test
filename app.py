@@ -49,14 +49,16 @@ def today_entries():
         except ValueError:
             flash("Invalid date format.", "danger")
 
+    # Fetch reflections from same day-month across years
     month_day = today.strftime("%m-%d")
     matches = get_matches_for_month_day(month_day)
 
     selected = []
     if matches:
         random_year = random.choice(list(set([entry['occurred_on'][:4] for entry in matches])))
-        selected = [entry for entry in matches if entry['occurred_on'].startswith(random_year)]
+        selected = [entry for entry in matches if entry['occurred_on'].startswith(random_year)][:3]
 
+    # Identify the first missed day in the last 14
     fourteen_days_ago = today - datetime.timedelta(days=14)
     recent_dates = [fourteen_days_ago + datetime.timedelta(days=i) for i in range(15)]
 
