@@ -25,7 +25,7 @@ def count_entries_for_date(date):
     return result.count if result.count else 0
 
 def get_all_entries():
-    result = supabase.table("entries").select("*").order("occurred_on", desc=True).execute()
+    result = supabase.table("entries").select("*").order("occurred_on", desc=True).limit(1000).execute()
     return result.data if result.data else []
 
 def parse_occurred_on(entry_date):
@@ -38,22 +38,22 @@ def parse_occurred_on(entry_date):
     raise ValueError(f"Unknown date format: {entry_date}")
 
 def get_matches_for_month_day(month_day):
-    result = supabase.table("entries").select("*").execute()
+    result = supabase.table("entries").select("*").limit(1000).execute()
 
     print("✅ ALL ENTRIES FROM SUPABASE:")
-    for entry in result.data:
-        print(entry)
+    print("🔍 Raw Supabase result:", result)
+    print("🔢 Result count:", len(result.data) if result.data else 0)
 
     matches = []
-    print(f"▶️ Checking against month_day: {month_day}")
     for entry in result.data:
         try:
+            print("🔍 Raw entry:", entry)
             entry_date = parse_occurred_on(entry["occurred_on"])
-            print(f"🔍 Raw entry: {entry['occurred_on']} | Parsed date: {entry_date} | Formatted: {entry_date.strftime('%m-%d')}")
+            print("🔍 Parsed date:", entry_date, "| Formatted:", entry_date.strftime("%m-%d"))
             if entry_date.strftime("%m-%d") == month_day:
                 matches.append(entry)
         except Exception as e:
-            print("❌ Error parsing date:", entry["occurred_on"], "| Error:", e)
+            print("❌ Error parsing entry:", entry, "| Error:", e)
 
     print(f"✅ MATCHES for {month_day}: {len(matches)} found")
     return matches
@@ -76,6 +76,7 @@ def today_entries():
             flash("Invalid date format.", "danger")
 
     month_day = today.strftime("%m-%d")
+    print("▶️ Checking against month_day:", month_day)
     matches = get_matches_for_month_day(month_day)
 
     selected = []
