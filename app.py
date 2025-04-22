@@ -30,11 +30,23 @@ def get_all_entries():
 
 def get_matches_for_month_day(month_day):
     result = supabase.table("entries").select("*").execute()
-    matches = [
-        entry for entry in result.data
-        if datetime.datetime.strptime(entry['occurred_on'], "%Y-%m-%d").strftime("%m-%d") == month_day]
-    return matches
+    
+    # Debug output to verify what's in Supabase
+    print("✅ ALL ENTRIES FROM SUPABASE:")
+    for entry in result.data:
+        print(entry)
 
+    matches = []
+    for entry in result.data:
+        try:
+            entry_date = datetime.datetime.strptime(entry["occurred_on"], "%Y-%m-%d")
+            if entry_date.strftime("%m-%d") == month_day:
+                matches.append(entry)
+        except Exception as e:
+            print("❌ Error parsing date:", entry["occurred_on"], "| Error:", e)
+
+    print(f"✅ MATCHES for {month_day}: {len(matches)} found")
+    return matches
 
 @app.route("/", methods=["GET", "POST"])
 def today_entries():
