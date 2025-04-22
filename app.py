@@ -30,8 +30,7 @@ def get_all_entries():
 
 def get_matches_for_month_day(month_day):
     result = supabase.table("entries").select("*").execute()
-    
-    # Debug output to verify what's in Supabase
+
     print("✅ ALL ENTRIES FROM SUPABASE:")
     for entry in result.data:
         print(entry)
@@ -39,7 +38,8 @@ def get_matches_for_month_day(month_day):
     matches = []
     for entry in result.data:
         try:
-            entry_date = datetime.datetime.strptime(entry["occurred_on"], "%Y-%m-%d")
+            # Convert to string to safely parse date
+            entry_date = datetime.datetime.strptime(str(entry["occurred_on"]), "%Y-%m-%d")
             if entry_date.strftime("%m-%d") == month_day:
                 matches.append(entry)
         except Exception as e:
@@ -64,16 +64,14 @@ def today_entries():
         except ValueError:
             flash("Invalid date format.", "danger")
 
-    # Fetch reflections from same day-month across years
     month_day = today.strftime("%m-%d")
     matches = get_matches_for_month_day(month_day)
 
     selected = []
     if matches:
-        random_year = random.choice(list(set([entry['occurred_on'][:4] for entry in matches])))
-        selected = [entry for entry in matches if entry['occurred_on'].startswith(random_year)][:3]
+        random_year = random.choice(list(set([str(entry['occurred_on'])[:4] for entry in matches])))
+        selected = [entry for entry in matches if str(entry['occurred_on']).startswith(random_year)][:3]
 
-    # Identify the first missed day in the last 14
     fourteen_days_ago = today - datetime.timedelta(days=14)
     recent_dates = [fourteen_days_ago + datetime.timedelta(days=i) for i in range(15)]
 
@@ -106,7 +104,7 @@ def history():
 
     grouped = defaultdict(list)
     for row in entries:
-        year = row['occurred_on'][:4]
+        year = str(row['occurred_on'])[:4]
         grouped[year].append(row)
 
     grouped = dict(sorted(grouped.items(), reverse=True))
