@@ -25,7 +25,7 @@ def count_entries_for_date(date):
     return result.count if result.count else 0
 
 def get_all_entries():
-    result = supabase.table("entries").select("*").order("occurred_on", desc=True).limit(1000).execute()
+    result = supabase.table("entries").select("*").order("occurred_on", desc=True).execute()
     return result.data if result.data else []
 
 def parse_occurred_on(entry_date):
@@ -38,6 +38,9 @@ def parse_occurred_on(entry_date):
     raise ValueError(f"Unknown date format: {entry_date}")
 
 def get_matches_for_month_day(month_day):
+    print("🟢 TODAY ENTRIES ROUTE HIT")
+    print(f"▶️ Checking against month_day: {month_day}")
+
     result = supabase.table("entries").select("*").limit(1000).execute()
 
     print("✅ ALL ENTRIES FROM SUPABASE:")
@@ -60,7 +63,6 @@ def get_matches_for_month_day(month_day):
 
 @app.route("/", methods=["GET", "POST"])
 def today_entries():
-    print("🟢 TODAY ENTRIES ROUTE HIT")
     today = datetime.datetime.now().date()
 
     if request.method == "POST":
@@ -76,7 +78,6 @@ def today_entries():
             flash("Invalid date format.", "danger")
 
     month_day = today.strftime("%m-%d")
-    print("▶️ Checking against month_day:", month_day)
     matches = get_matches_for_month_day(month_day)
 
     selected = []
