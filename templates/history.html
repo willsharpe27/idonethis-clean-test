@@ -19,7 +19,7 @@
       {% for row in entries %}
         <div class="card mb-3 shadow-sm">
           <div class="card-header fw-bold">
-            {{ row.occurred_on.strftime('%Y-%m-%d') }}
+            {{ row.occurred_on }}
           </div>
           <div class="card-body">
             <p class="card-text">{{ row.body }}</p>
