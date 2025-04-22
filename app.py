@@ -38,10 +38,11 @@ def get_matches_for_month_day(month_day):
     matches = []
     for entry in result.data:
         try:
-            if isinstance(entry["occurred_on"], str):
-                entry_date = datetime.datetime.strptime(entry["occurred_on"], "%Y-%m-%d").date()
-            else:
-                entry_date = entry["occurred_on"]
+            entry_date = entry["occurred_on"]
+            if isinstance(entry_date, str):
+                entry_date = datetime.datetime.strptime(entry_date, "%Y-%m-%d").date()
+            elif isinstance(entry_date, dict) and "year" in entry_date:
+                entry_date = datetime.date(entry_date["year"], entry_date["month"], entry_date["day"])
 
             if entry_date.strftime("%m-%d") == month_day:
                 matches.append(entry)
