@@ -28,6 +28,15 @@ def get_all_entries():
     result = supabase.table("entries").select("*").order("occurred_on", desc=True).execute()
     return result.data if result.data else []
 
+def parse_occurred_on(entry_date):
+    if isinstance(entry_date, str):
+        return datetime.datetime.strptime(entry_date, "%Y-%m-%d").date()
+    elif isinstance(entry_date, dict) and {"year", "month", "day"}.issubset(entry_date):
+        return datetime.date(entry_date["year"], entry_date["month"], entry_date["day"])
+    elif isinstance(entry_date, datetime.date):
+        return entry_date
+    raise ValueError(f"Unknown date format: {entry_date}")
+
 def get_matches_for_month_day(month_day):
     result = supabase.table("entries").select("*").execute()
 
@@ -36,14 +45,11 @@ def get_matches_for_month_day(month_day):
         print(entry)
 
     matches = []
+    print(f"▶️ Checking against month_day: {month_day}")
     for entry in result.data:
         try:
-            entry_date = entry["occurred_on"]
-            if isinstance(entry_date, str):
-                entry_date = datetime.datetime.strptime(entry_date, "%Y-%m-%d").date()
-            elif isinstance(entry_date, dict) and "year" in entry_date:
-                entry_date = datetime.date(entry_date["year"], entry_date["month"], entry_date["day"])
-
+            entry_date = parse_occurred_on(entry["occurred_on"])
+            print(f"🔍 Raw entry: {entry['occurred_on']} | Parsed date: {entry_date} | Formatted: {entry_date.strftime('%m-%d')}")
             if entry_date.strftime("%m-%d") == month_day:
                 matches.append(entry)
         except Exception as e:
@@ -54,6 +60,7 @@ def get_matches_for_month_day(month_day):
 
 @app.route("/", methods=["GET", "POST"])
 def today_entries():
+    print("🟢 TODAY ENTRIES ROUTE HIT")
     today = datetime.datetime.now().date()
 
     if request.method == "POST":
@@ -73,8 +80,8 @@ def today_entries():
 
     selected = []
     if matches:
-        random_year = random.choice(list(set([str(entry['occurred_on'])[:4] for entry in matches])))
-        selected = [entry for entry in matches if str(entry['occurred_on']).startswith(random_year)][:3]
+        random_year = random.choice(list(set([str(parse_occurred_on(entry['occurred_on']).year) for entry in matches])))
+        selected = [entry for entry in matches if str(parse_occurred_on(entry['occurred_on']).year) == random_year][:3]
 
     fourteen_days_ago = today - datetime.timedelta(days=14)
     recent_dates = [fourteen_days_ago + datetime.timedelta(days=i) for i in range(15)]
@@ -108,7 +115,7 @@ def history():
 
     grouped = defaultdict(list)
     for row in entries:
-        year = str(row['occurred_on'])[:4]
+        year = str(parse_occurred_on(row['occurred_on']).year)
         grouped[year].append(row)
 
     grouped = dict(sorted(grouped.items(), reverse=True))
